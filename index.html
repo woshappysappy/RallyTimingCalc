@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3-Player Rally Coordinator</title>
+    <!-- Tailwind CSS for a clean, modern dark mode look -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-gray-800 rounded-2xl shadow-xl p-6 border border-gray-700">
+        <h1 class="text-2xl font-bold text-center mb-1 text-indigo-400">Rally Time Coordinator</h1>
+        <p class="text-xs text-gray-400 text-center mb-6">Enter all values strictly in seconds</p>
+
+        <!-- Inputs Section -->
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Player A March Time (s)</label>
+                <input type="number" id="marchA" value="120" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Player B March Time (s)</label>
+                <input type="number" id="marchB" value="150" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-300 mb-1">Player C March Time (s)</label>
+                <input type="number" id="marchC" value="105" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Lag: B after A (s)</label>
+                    <input type="number" id="lagB" value="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-400 mb-1">Lag: C after B (s)</label>
+                    <input type="number" id="lagC" value="2" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-gray-700 my-6">
+
+        <!-- Output Section -->
+        <div>
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-3">Launch Sequence Plan</h2>
+            <div id="results" class="space-y-3">
+                <!-- JavaScript injects steps here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputs = ['marchA', 'marchB', 'marchC', 'lagB', 'lagC'];
+        
+        function calculateTimeline() {
+            // Grab current input values
+            const mA = parseFloat(document.getElementById('marchA').value) || 0;
+            const mB = parseFloat(document.getElementById('marchB').value) || 0;
+            const mC = parseFloat(document.getElementById('marchC').value) || 0;
+            const lB = parseFloat(document.getElementById('lagB').value) || 0;
+            const lC = parseFloat(document.getElementById('lagC').value) || 0;
+
+            // Target landing offsets relative to Player A landing at 0
+            const landA = 0;
+            const landB = lB;
+            const landC = lB + lC;
+
+            // Theoretical launch times relative to baseline
+            const launchA = landA - mA;
+            const launchB = landB - mB;
+            const launchC = landC - mC;
+
+            // Find who has to start earliest (the lowest negative number)
+            const minLaunch = Math.min(launchA, launchB, launchC);
+
+            // Normalize schedule so the first launch happens exactly at 0 seconds
+            const schedule = [
+                { name: 'Player A', startAt: launchA - minLaunch },
+                { name: 'Player B', startAt: launchB - minLaunch },
+                { name: 'Player C', startAt: launchC - minLaunch }
+            ];
+
+            // Sort chronologically by start time
+            schedule.sort((a, b) => a.startAt - b.startAt);
+
+            // Generate clean HTML output
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            schedule.forEach((player, index) => {
+                const stepCard = document.createElement('div');
+                // Give the very first step a distinctive border accent
+                const borderClass = index === 0 ? 'border-l-4 border-emerald-500 pl-2' : 'pl-3';
+                
+                stepCard.className = `bg-gray-900/50 p-3 rounded-lg flex justify-between items-center ${borderClass}`;
+                
+                let timingText = '';
+                if (index === 0) {
+                    timingText = `<span class="text-xs font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">Start Immediately</span>`;
+                } else {
+                    timingText = `<span class="text-sm font-mono text-indigo-300">Wait +${player.startAt}s</span>`;
+                }
+
+                stepCard.innerHTML = `
+                    <div>
+                        <p class="text-xs text-gray-500 font-bold uppercase">Step ${index + 1}</p>
+                        <p class="text-sm font-semibold text-white">${player.name} starts rally</p>
+                    </div>
+                    <div class="text-right">${timingText}</div>
+                `;
+                resultsDiv.appendChild(stepCard);
+            });
+        }
+
+        // Add live listeners to all input boxes for real-time calculations
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateTimeline);
+        });
+
+        // Run once on load to show initial configuration
+        calculateTimeline();
+    </script>
+</body>
+</html>
